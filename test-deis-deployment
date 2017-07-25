@@ -1,0 +1,12 @@
+#! /usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+
+echo "    >>-----> Asking ${WEBAPP_BASE_URL} what about its SOURCE_VERSION"
+WEBAPP_SOURCE_VERSION=$(curl ${WEBAPP_BASE_URL}/v1/status | perl -lne 'if ($_ =~ m/sourceVersion": "([^"]*)"/) {print $1}')
+export WEBAPP_SOURCE_VERSION
+echo "    >>-----> Found that ${WEBAPP_BASE_URL} is running with SOURCE_VERSION=${WEBAPP_SOURCE_VERSION}"
+
+CI_BASE_DIR=$(git rev-parse --show-toplevel)
+${CI_BASE_DIR}/scripts/run-remote-tests

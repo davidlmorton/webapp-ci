@@ -1,0 +1,22 @@
+#! /usr/bin/env bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
+echo "    >>-----> Running 'git clean -dfx'"
+git clean -dfx
+
+echo "    >>-----> Running 'git checkout ${WEBAPP_SOURCE_VERSION}'"
+OLD_GIT_SHA=$(git rev-parse HEAD)
+git checkout ${WEBAPP_SOURCE_VERSION}
+
+echo "    >>-----> Entering pyenv 3.6.1"
+export PATH="~/.pyenv/bin:$PATH"
+eval "$(pyenv init -)"
+export PYENV_VERSION=3.6.1
+
+echo "    >>-----> Running tests"
+tox -re tests-only
+
+echo "    >>-----> Running 'git checkout -"
+git checkout ${OLD_GIT_SHA}
