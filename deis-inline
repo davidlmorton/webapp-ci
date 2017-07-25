@@ -1,0 +1,20 @@
+#! /usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+
+export PATH="${HOME}/bin:${PATH}"
+
+function finish {
+    echo "Logging out of deis"
+    deis logout
+}
+trap finish EXIT
+
+echo "Logging into deis controller: ${DEIS_CONTROLLER_URL}"
+deis login "${DEIS_CONTROLLER_URL}" \
+    --username admin \
+    --password "${DEIS_ADMIN_PASSWORD}"
+
+DEIS_ENV=$(deis config:list --app ${DEIS_APP_NAME} --oneline)
+/usr/bin/env ${DEIS_ENV} "$@"
