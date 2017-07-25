@@ -1,0 +1,42 @@
+#! /usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+
+CI_BASE_DIR=$(git rev-parse --show-toplevel)
+export PATH=${CI_BASE_DIR}/scripts:${PATH}
+
+WEBAPP_SCRIPTS_DIR=$(dirname CI_BASE_DIR)
+
+echo "    >>-----> Updating Backing Services"
+deis-inline tox-inline ${WEBAPP_SCRIPTS_DIR}/update-backing-services.py
+
+echo "    >>-----> Updating config for app: ${DEIS_APP_NAME}"
+tox-inline update-config.py \
+    --app=${DEIS_APP_NAME} \
+    --controller-url=${DEIS_CONTROLLER_URL} \
+    --admin-pass=${DEIS_ADMIN_PASS}
+
+echo "    >>-----> Pushing to deis remote"
+DEIS_REMOTE="ssh://git@${DEIS_BUILDER_URL}:2222/${DEIS_APP_NAME}.git"
+git push "${DEIS_REMOTE}" HEAD:refs/heads/master
+
+TARGET_GIT_SHA=$(git rev-parse HEAD)
+echo "    >>-----> Waiting for deployment (${TARGET_GIT_SHA}) to become active"
+DEPLOYED_GIT_SHA=$(curl ${WEBAPP_BASE_URL}/v1/status 2>/dev/null | perl -lne 'if ($_ =~ m/sourceVersion": "([^"]*)"/) {print $1}')
+until echo ${TARGET_GIT_SHA} | grep ${DEPLOYED_GIT_SHA}; do
+    DEPLOYED_GIT_SHA=$(curl ${WEBAPP_BASE_URL}/v1/status 2>/dev/null | perl -lne 'if ($_ =~ m/sourceVersion": "([^"]*)"/) {print $1}')
+    echo "    >>-----> Waiting... deployment still at (${DEPLOYED_GIT_SHA})"
+    sleep 5
+done
+echo "    >>-----> Confirmed that ${TARGET_GIT_SHA} has been deployed"
+
+echo "    >>-----> Running Remote API Tests"
+if deis-inline test-deis-deployment; then
+    echo "    >>-----> Deployment Successfully Completed"
+    deis-inline deis releases --app ${DEIS_APP_NAME}
+else
+    echo "    >>-----> Tests Failed, Rolling Back Deployment..."
+    deis-inline rollback-deis-deployment
+    exit 1
+fi
