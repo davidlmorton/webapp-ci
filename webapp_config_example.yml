@@ -1,0 +1,48 @@
+---
+base_config:
+    values:
+        PORT: 5000
+        WEBAPP_LOG_FORMAT_JSON: 1
+    memory: {}
+    cpu: {}
+    tags: {}
+    registry: {}
+    healthcheck:
+        web/cmd:
+            readinessProbe:
+                timeoutSeconds: 5
+                initialDelaySeconds: 10
+                periodSeconds: 10
+                successThreshold: 1
+                httpGet:
+                    path: /v1/status
+                    port: 5000
+                failureThreshold: 3
+
+per_app_values:
+    "dev-webapp":
+        WEBAPP_LOG_LEVEL: DEBUG
+    "prod-webapp":
+        WEBAPP_LOG_LEVEL: INFO
+
+per_app_config:
+    "dev-webapp":
+        healthcheck:
+            web/cmd:
+                readinessProbe:
+                    timeoutSeconds: 5
+                    initialDelaySeconds: 10
+                    periodSeconds: 10
+                    successThreshold: 1
+                    httpGet:
+                        path: /v1/status
+                        port: 5000
+                    failureThreshold: 3
+    "prod-webapp":
+        # This is just an example, production should have healthchecks too
+        healthcheck: {}
+
+values_from_env:
+    - "WEBAPP_BASE_URL"
+    - "WEBAPP_CELERY_BROKER_URL"
+    - "WEBAPP_CELERY_RESULT_BACKEND"
