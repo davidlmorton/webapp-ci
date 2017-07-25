@@ -1,0 +1,139 @@
+#! /usr/bin/env python
+import argparse
+import errno
+import os
+import sys
+import psutil
+import signal
+import time
+
+honcho_process = None
+child_pids = set()
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--logdir', default='-')
+    parser.add_argument('--pidfile', default=os.path.join('var', 'pid'))
+    parser.add_argument('--procfile')
+    parser.add_argument('--timeout', type=int, default='-1')
+    return parser.parse_args()
+
+
+# This is from a stackoverflow answer:
+# http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
+def service_command_line(procfile_path):
+    return ['honcho', 'start', '-f', procfile_path]
+
+
+def shutdown():
+    # send sigINT then if they're still alive sigKILL
+    if signal_processes(child_pids, signal.SIGINT):
+        time.sleep(3)
+        signal_processes(child_pids, signal.SIGKILL)
+
+
+def signal_processes(pids, sig):
+    signaled = []
+    for p in pids:
+        try:
+            process = psutil.Process(p)
+            process.send_signal(sig)
+            signaled.append(process.pid)
+        except psutil.NoSuchProcess:
+            pass
+
+    if len(signaled) > 0:
+        sys.stderr.write(
+            "Sent signal (%s) to processes: %s\n" % (sig, signaled))
+        return True
+    else:
+        return False
+
+
+def find_new_children():
+    for p in child_pids.copy():
+        try:
+            process = psutil.Process(p)
+            child_pids.update(
+                [p.pid for p in process.children(recursive=True)])
+        except psutil.NoSuchProcess:
+            pass
+
+
+def cleanup():
+    sys.stderr.write('Shutting down the devserver.\n')
+    find_new_children()
+    try:
+        honcho_process.send_signal(signal.SIGINT)
+    except psutil.NoSuchProcess:
+        return
+
+    try:
+        honcho_process.wait(timeout=3)
+    except psutil.TimeoutExpired:
+        pass
+
+    shutdown()
+
+
+def log_and_cleanup(signum, frame):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    sys.stderr.write("RECEIVED SIGNAL: '%s'\n" % signum)
+    cleanup()
+    sys.exit(0)
+
+
+def setup_signal_handlers():
+    signal.signal(signal.SIGINT, log_and_cleanup)
+    signal.signal(signal.SIGTERM, log_and_cleanup)
+
+
+def run(logdir, procfile_path, pidfile, timeout):
+    global honcho_process
+
+    setup_signal_handlers()
+
+    if (logdir == '-'):
+        outlog = sys.stdout
+        errlog = sys.stderr
+    else:
+        mkdir_p(logdir)
+        sys.stderr.write('Launching the devserver... logging to: %s\n' % logdir)
+        outlog = open(os.path.join(logdir, 'honcho.out'), 'w')
+        errlog = open(os.path.join(logdir, 'honcho.err'), 'w')
+
+    honcho_process = psutil.Popen(
+        service_command_line(procfile_path), shell=False,
+        stdout=outlog, stderr=errlog)
+    with open(pidfile, 'w') as pidfile:
+        pidfile.write(str(honcho_process.pid))
+
+    child_pids.update(
+        [p.pid for p in psutil.Process().children(recursive=True)])
+
+    if timeout > 0:
+        honcho_process.wait(timeout=timeout)
+    else:
+        honcho_process.wait()
+    cleanup()
+
+
+if __name__ == '__main__':
+    arguments = parse_args()
+
+    run(logdir=arguments.logdir,
+        procfile_path=arguments.procfile,
+        pidfile=arguments.pidfile,
+        timeout=arguments.timeout)

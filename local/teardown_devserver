@@ -1,0 +1,16 @@
+#! /bin/bash
+
+PID=$(cat $1 2>/dev/null)
+
+test -z $PID && echo "No devserver found to be running." && exit 0
+
+echo -n "Killing devserver with PID: $PID "
+
+kill $PID
+
+while ps -p $PID >/dev/null; do
+    echo -n "."
+    sleep 1
+done
+
+echo
