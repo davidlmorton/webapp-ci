@@ -1,0 +1,46 @@
+#! /usr/bin/env bash
+
+echo "Updating apt-get"
+sudo apt-get update
+
+echo "Installing apt-get packages"
+sudo apt-get -qq -y install vim git python-dev \
+    python-pip build-essential libbz2-dev libssl-dev \
+    libreadline-dev libsqlite3-dev tk-dev libpng-dev \
+    libfreetype6-dev docker.io libcurl4-openssl-dev
+
+# Ubuntu defaults to Dash instead of bash for /bin/sh which
+# makes some child process management more difficult.  We prefer bash
+echo "Updating alternatives to use bash instead of dash"
+sudo update-alternatives --install /bin/sh sh /bin/bash 100
+
+echo "Installing pyenv"
+curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
+echo 'export PATH="~/.pyenv/bin:$PATH"' >> $HOME/.bashrc
+echo 'eval "$(pyenv init -)"' >> $HOME/.bashrc
+echo 'eval "$(pyenv virtualenv-init -)"' >> $HOME/.bashrc
+
+echo "Exec'ing a new shell to re-run login scripts"
+exec $SHELL
+
+echo "Updating pyenv"
+pyenv update
+
+echo "Installing python 3.6.1"
+pyenv install 3.6.1
+
+echo "Switching to python 3.6.1"
+pyenv shell 3.6.1
+
+echo "Updating pip"
+pip install -U pip
+
+echo "Installing tox"
+pip install tox
+
+echo "Installing Deis CLI"
+sudo curl -sSL http://deis.io/deis-cli/install-v2.sh | bash
+mkdir -p ${HOME}/bin
+mv deis bin
+
+echo "Done"
