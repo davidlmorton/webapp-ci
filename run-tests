@@ -1,0 +1,11 @@
+#! /usr/bin/env bash
+set -o errexit
+set -o nounset
+
+export PATH="~/.pyenv/bin:${PATH}"
+eval "$(pyenv init -)"
+export PYENV_VERSION=3.6.1
+
+REPO_ROOT_DIR=$(git rev-parse --show-toplevel)
+WEBAPP_SCRIPTS_DIR=$(dirname ${REPO_ROOT})
+${WEBAPP_SCRIPTS_DIR}/start-ci-containers 'tox -r'
