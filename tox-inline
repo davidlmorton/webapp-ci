@@ -1,0 +1,14 @@
+#! /usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+
+export PATH="${HOME}/.pyenv/bin:${PATH}"
+eval "$(pyenv init -)"
+export PYENV_VERSION=3.6.1
+
+if [ -z ${TOX_REBUILD:+x} ]; then
+    tox -e bash -- "$@"
+else
+    tox -re bash -- "$@"
+fi
