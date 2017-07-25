@@ -8,4 +8,4 @@ export PYENV_VERSION=3.6.1
 
 REPO_ROOT_DIR=$(git rev-parse --show-toplevel)
 WEBAPP_SCRIPTS_DIR=$(dirname ${REPO_ROOT})
-${WEBAPP_SCRIPTS_DIR}/start-ci-containers 'tox -r'
+${WEBAPP_SCRIPTS_DIR}/start-backing-services 'tox -r'
