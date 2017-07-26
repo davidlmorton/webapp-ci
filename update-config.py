@@ -1,9 +1,10 @@
 #! /usr/bin/env python
+from pprint import pprint, pformat
 import argparse
 import json
 import os
-from pprint import pprint, pformat
 import requests
+import yaml
 
 
 class ConfigManager:
