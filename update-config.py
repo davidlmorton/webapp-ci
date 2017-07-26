@@ -20,7 +20,7 @@ class ConfigManager:
     def base_config(self):
         return self._config['base_config']
 
-    @properties
+    @property
     def app_values(self):
         return self._config['per_app_values'][self._app]
 
