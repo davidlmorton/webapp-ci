@@ -6,16 +6,15 @@ set -o nounset
 CI_BASE_DIR=$(git rev-parse --show-toplevel)
 export PATH=${CI_BASE_DIR}/scripts:${PATH}
 
-WEBAPP_SCRIPTS_DIR=$(dirname CI_BASE_DIR)
-
-echo "    >>-----> Updating Backing Services"
-deis-inline tox-inline ${WEBAPP_SCRIPTS_DIR}/update-backing-services.py
-
 echo "    >>-----> Updating config for app: ${DEIS_APP_NAME}"
 tox-inline update-config.py \
     --app=${DEIS_APP_NAME} \
     --controller-url=${DEIS_CONTROLLER_URL} \
     --admin-pass=${DEIS_ADMIN_PASS}
+
+WEBAPP_SCRIPTS_DIR=$(dirname CI_BASE_DIR)
+echo "    >>-----> Updating Backing Services"
+deis-inline tox-inline ${WEBAPP_SCRIPTS_DIR}/update-backing-services.py
 
 echo "    >>-----> Pushing to deis remote"
 DEIS_REMOTE="ssh://git@${DEIS_BUILDER_URL}:2222/${DEIS_APP_NAME}.git"
