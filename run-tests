@@ -6,6 +6,24 @@ export PATH="~/.pyenv/bin:${PATH}"
 eval "$(pyenv init -)"
 export PYENV_VERSION=3.6.1
 
-REPO_ROOT_DIR=$(git rev-parse --show-toplevel)
-WEBAPP_SCRIPTS_DIR=$(dirname ${REPO_ROOT})
-${WEBAPP_SCRIPTS_DIR}/start-backing-services 'tox -r'
+resolve_link() {
+  readlink "$1"
+}
+
+abs_dirname() {
+  local cwd="$(pwd)"
+  local path="$1"
+
+  while [ -n "$path" ]; do
+    cd "${path%/*}"
+    local name="${path##*/}"
+    path="$(resolve_link "$name" || true)"
+  done
+
+  pwd
+  cd "$cwd"
+}
+
+export CI_BASE_DIR="$(abs_dirname "$0")"
+WEBAPP_SCRIPTS_DIR=$(dirname ${CI_BASE_DIR})
+${WEBAPP_SCRIPTS_DIR}/start-backing-services tox -r $@
