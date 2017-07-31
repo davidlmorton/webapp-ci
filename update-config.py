@@ -136,7 +136,7 @@ def parse_args():
             help='The url of the deis controller')
     parser.add_argument('--admin-pass', required=True,
             help='The password for the deis admin user')
-    parser.add_argument('--config-yaml', requried=True,
+    parser.add_argument('--config-yaml', required=True,
             help='A yaml file containing the configuration for your app')
     return parser.parse_args()
 
