@@ -3,8 +3,28 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-CI_BASE_DIR=$(git rev-parse --show-toplevel)
-export PATH=${CI_BASE_DIR}/scripts:${PATH}
+
+echo "    >>-----> Starting deploy script"
+resolve_link() {
+  readlink "$1"
+}
+
+abs_dirname() {
+  local cwd="$(pwd)"
+  local path="$1"
+
+  while [ -n "$path" ]; do
+    cd "${path%/*}"
+    local name="${path##*/}"
+    path="$(resolve_link "$name" || true)"
+  done
+
+  pwd
+  cd "$cwd"
+}
+
+export CI_BASE_DIR="$(abs_dirname "$0")"
+export PATH=${CI_BASE_DIR}:${PATH}
 
 echo "    >>-----> Updating config for app: ${DEIS_APP_NAME}"
 tox-inline update-config.py \
