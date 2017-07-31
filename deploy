@@ -32,14 +32,14 @@ CONFIG_YAML="${WEBAPP_SCRIPTS_DIR}/config.yaml"
 tox-inline update-config.py \
     --app=${DEIS_APP_NAME} \
     --controller-url=${DEIS_CONTROLLER_URL} \
-    --admin-pass=${DEIS_ADMIN_PASS} \
+    --admin-pass=${DEIS_ADMIN_PASSWORD} \
     --config-yaml=${CONFIG_YAML}
 
 echo "    >>-----> Updating Backing Services"
 deis-inline tox-inline ${WEBAPP_SCRIPTS_DIR}/update-backing-services.py
 
 echo "    >>-----> Pushing to deis remote"
-DEIS_REMOTE="ssh://git@${DEIS_BUILDER_URL}:2222/${DEIS_APP_NAME}.git"
+DEIS_REMOTE="ssh://git@${DEIS_BUILDER_HOSTNAME}:2222/${DEIS_APP_NAME}.git"
 git push "${DEIS_REMOTE}" HEAD:refs/heads/master
 
 TARGET_GIT_SHA=$(git rev-parse HEAD)
