@@ -8,5 +8,23 @@ WEBAPP_SOURCE_VERSION=$(curl ${WEBAPP_BASE_URL}/v1/status | perl -lne 'if ($_ =~
 export WEBAPP_SOURCE_VERSION
 echo "    >>-----> Found that ${WEBAPP_BASE_URL} is running with SOURCE_VERSION=${WEBAPP_SOURCE_VERSION}"
 
-CI_BASE_DIR=$(git rev-parse --show-toplevel)
-${CI_BASE_DIR}/scripts/run-remote-tests
+resolve_link() {
+  readlink "$1"
+}
+
+abs_dirname() {
+  local cwd="$(pwd)"
+  local path="$1"
+
+  while [ -n "$path" ]; do
+    cd "${path%/*}"
+    local name="${path##*/}"
+    path="$(resolve_link "$name" || true)"
+  done
+
+  pwd
+  cd "$cwd"
+}
+
+export CI_BASE_DIR="$(abs_dirname "$0")"
+${CI_BASE_DIR}/run-remote-tests
