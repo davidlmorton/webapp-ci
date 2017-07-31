@@ -27,12 +27,14 @@ export CI_BASE_DIR="$(abs_dirname "$0")"
 export PATH=${CI_BASE_DIR}:${PATH}
 
 echo "    >>-----> Updating config for app: ${DEIS_APP_NAME}"
+WEBAPP_SCRIPTS_DIR=$(dirname ${CI_BASE_DIR})
+CONFIG_YAML="${WEBAPP_SCRIPTS_DIR}/config.yaml"
 tox-inline update-config.py \
     --app=${DEIS_APP_NAME} \
     --controller-url=${DEIS_CONTROLLER_URL} \
-    --admin-pass=${DEIS_ADMIN_PASS}
+    --admin-pass=${DEIS_ADMIN_PASS} \
+    --config-yaml=${CONFIG_YAML}
 
-WEBAPP_SCRIPTS_DIR=$(dirname CI_BASE_DIR)
 echo "    >>-----> Updating Backing Services"
 deis-inline tox-inline ${WEBAPP_SCRIPTS_DIR}/update-backing-services.py
 
