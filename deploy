@@ -39,6 +39,7 @@ echo "    >>-----> Updating Backing Services"
 deis-inline tox-inline ${WEBAPP_SCRIPTS_DIR}/update-backing-services.py
 
 echo "    >>-----> Pushing to deis remote"
+cd ${WEBAPP_SCRIPTS_DIR}
 DEIS_REMOTE="ssh://git@${DEIS_BUILDER_HOSTNAME}:2222/${DEIS_APP_NAME}.git"
 git push "${DEIS_REMOTE}" HEAD:refs/heads/master
 
